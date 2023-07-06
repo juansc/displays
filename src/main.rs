@@ -3,15 +3,12 @@ extern crate core_graphics;
 use std::fmt::{Debug, Formatter};
 use std::ptr;
 
-use core_graphics::display::{
-    CGBeginDisplayConfiguration, CGCompleteDisplayConfiguration, CGConfigureDisplayOrigin,
-    CGConfigureOption, CGDirectDisplayID, CGDisplayBounds, CGDisplayConfigRef,
-    CGGetActiveDisplayList, CGMainDisplayID,
-};
+use core_graphics::display::{CGBeginDisplayConfiguration, CGCompleteDisplayConfiguration, CGConfigureDisplayOrigin, CGConfigureOption, CGDirectDisplayID, CGDisplayBounds, CGDisplayConfigRef, CGDisplayIsBuiltin, CGGetActiveDisplayList, CGMainDisplayID};
 use core_graphics::geometry::CGRect;
 
 const LAPTOP_POSITION: (i32, i32) = (0, 0);
 
+#[derive(Copy, Clone)]
 struct DisplayInfo {
     id: CGDirectDisplayID,
     x: i32,
@@ -83,37 +80,34 @@ fn main() {
     if display_count != 3 {
         return;
     }
-    let laptop_display = unsafe { CGMainDisplayID() };
-    let mut left_display = 0;
-    let mut right_display = 0;
-
     let mut laptop_display_info: Option<DisplayInfo> = None;
-    let mut left_display_info: Option<DisplayInfo> = None;
-    let mut right_display_info: Option<DisplayInfo> = None;
+    let mut external_monitors = vec![];
 
     for i in 0..display_count {
         let display_id = displays[i as usize];
 
         let bounds = unsafe { CGDisplayBounds(display_id) };
-        let x = bounds.origin.x as i32;
         println!("Got everything");
         let info = Some(DisplayInfo::new(display_id, bounds));
         println!("{info:?}");
 
-        if display_id == laptop_display {
+        if unsafe { CGDisplayIsBuiltin(display_id) } == 1  {
             laptop_display_info = info;
-        } else if x < 0 {
-            left_display = display_id;
-            left_display_info = info;
         } else {
-            right_display = display_id;
-            right_display_info = info;
+            external_monitors.push(info);
         }
     }
 
+    if external_monitors.len() != 2 {
+        println!("Only {} monitors detected. Must have exactly 2 external monitors.", external_monitors.len());
+        return
+    }
+
+    external_monitors.sort_by(|a, b| a.unwrap().x.cmp(&b.unwrap().x));
+
     let laptop_display_info = laptop_display_info.unwrap();
-    let right_display_info = right_display_info.unwrap();
-    let left_display_info = left_display_info.unwrap();
+    let right_display_info = external_monitors[0].unwrap();
+    let left_display_info = external_monitors[1].unwrap();
     // Now reset the displays and toggle
     // Grab a context, initialize it, and then set the display configuration.
     let mut config_ctx: CGDisplayConfigRef = ptr::null_mut();
@@ -122,15 +116,15 @@ fn main() {
         println!("Error: {out}");
         return;
     }
-    update_pos(config_ctx, laptop_display, LAPTOP_POSITION);
+    update_pos(config_ctx, laptop_display_info.id, LAPTOP_POSITION);
     update_pos(
         config_ctx,
-        right_display,
+        right_display_info.id,
         right_display_info.to_top_left(&laptop_display_info),
     );
     update_pos(
         config_ctx,
-        left_display,
+        left_display_info.id,
         left_display_info.to_top_right(&laptop_display_info),
     );
     // Commit the configuration.
