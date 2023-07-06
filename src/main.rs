@@ -106,8 +106,9 @@ fn main() {
     external_monitors.sort_by(|a, b| a.unwrap().x.cmp(&b.unwrap().x));
 
     let laptop_display_info = laptop_display_info.unwrap();
-    let right_display_info = external_monitors[0].unwrap();
-    let left_display_info = external_monitors[1].unwrap();
+    let left_display_info = external_monitors[0].unwrap();
+    let right_display_info = external_monitors[1].unwrap();
+
     // Now reset the displays and toggle
     // Grab a context, initialize it, and then set the display configuration.
     let mut config_ctx: CGDisplayConfigRef = ptr::null_mut();
