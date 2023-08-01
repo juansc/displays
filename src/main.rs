@@ -3,7 +3,11 @@ extern crate core_graphics;
 use std::fmt::{Debug, Formatter};
 use std::ptr;
 
-use core_graphics::display::{CGBeginDisplayConfiguration, CGCompleteDisplayConfiguration, CGConfigureDisplayOrigin, CGConfigureOption, CGDirectDisplayID, CGDisplayBounds, CGDisplayConfigRef, CGDisplayIsBuiltin, CGGetActiveDisplayList, CGMainDisplayID};
+use core_graphics::display::{
+    CGBeginDisplayConfiguration, CGCompleteDisplayConfiguration, CGConfigureDisplayOrigin,
+    CGConfigureOption, CGDirectDisplayID, CGDisplayBounds, CGDisplayConfigRef, CGDisplayIsBuiltin,
+    CGGetActiveDisplayList, CGMainDisplayID,
+};
 use core_graphics::geometry::CGRect;
 
 const LAPTOP_POSITION: (i32, i32) = (0, 0);
@@ -87,11 +91,9 @@ fn main() {
         let display_id = displays[i as usize];
 
         let bounds = unsafe { CGDisplayBounds(display_id) };
-        println!("Got everything");
         let info = Some(DisplayInfo::new(display_id, bounds));
-        println!("{info:?}");
 
-        if unsafe { CGDisplayIsBuiltin(display_id) } == 1  {
+        if unsafe { CGDisplayIsBuiltin(display_id) } == 1 {
             laptop_display_info = info;
         } else {
             external_monitors.push(info);
@@ -99,8 +101,11 @@ fn main() {
     }
 
     if external_monitors.len() != 2 {
-        println!("Only {} monitors detected. Must have exactly 2 external monitors.", external_monitors.len());
-        return
+        println!(
+            "Only {} monitors detected. Must have exactly 2 external monitors.",
+            external_monitors.len()
+        );
+        return;
     }
 
     external_monitors.sort_by(|a, b| a.unwrap().x.cmp(&b.unwrap().x));
@@ -138,7 +143,6 @@ fn main() {
 }
 
 fn update_pos(config_ctx: CGDisplayConfigRef, display: CGDirectDisplayID, pos: (i32, i32)) {
-    println!("id: {} new pos ({}, {})", display, pos.0, pos.1);
     let out = unsafe { CGConfigureDisplayOrigin(config_ctx, display, pos.0, pos.1) };
     if out != 0 {
         println!("Error: {out}");
